@@ -225,7 +225,7 @@ def Crawler(url, regions):
             
         # print(f"✅成功進入頁面...({driver.title})")
     #endregion
-            
+
     #region (選單處理 + 切換近三小時 / 一周)
         # 縣市選單
         select_County = WebDriverWait(driver, 10, 1).until(
@@ -278,6 +278,8 @@ def Crawler(url, regions):
 
             #region (逐三小時預報)
             try:
+                start = time.time()
+
                 # 確定有這個資料再開始抓
                 PC3_D = WebDriverWait(driver, 10, 1).until(
                     EC.presence_of_element_located(
@@ -292,6 +294,7 @@ def Crawler(url, regions):
                 continue
             finally:
                 one_week_aTag.click() # 切換到一周
+                
             #endregion
 
             #region (一週預報)
@@ -302,7 +305,7 @@ def Crawler(url, regions):
                         (By.ID, 'PC7_D')
                     )
                 )
-                seven_days = getThreeHours(soup) 
+                seven_days = getSevenDays(soup) 
                 seven_days = json.dumps(seven_days, indent = 4)
                 # print(seven_days)
             except Exception as e:
@@ -319,10 +322,14 @@ def Crawler(url, regions):
                         (`id`, `city`, `district`, `now_info`, `threehours`, `sevendays`) 
                         VALUES (%s, %s, %s, %s, %s, %s) 
                     ON DUPLICATE KEY UPDATE now_info = %s, threehours = %s, sevendays = %s""",
-                    (region['ID'], region['city'], region['district'], now_info, three_hours, seven_days , now_info, three_hours, seven_days,)
+                    (
+                        region['ID'], region['city'], region['district'], now_info, three_hours, seven_days , 
+                        now_info, three_hours, seven_days,
+                    )
                 )
                 db.commit() # 儲存變更
             #endregion
+        
     except KeyboardInterrupt:
         print("----(已中斷程式)----")
     
@@ -336,7 +343,10 @@ def Crawler(url, regions):
 
 
 
+
 if __name__ == '__main__':
+    final_start = time.time()
+
     db = connect_db(
         host='127.0.0.1',
         user='root',
@@ -348,12 +358,12 @@ if __name__ == '__main__':
     if( not db ):
         print("資料庫連線發生問題")
     
-    
+
     #region (!製作 hash map)
     # json_object = write_Map_JSON()
     # print(json_object)
     #endregion
-    start = time.time() # 紀錄開始時間(最終要得到整個執行過程總共花費多少時間)
+    # start = time.time() # 紀錄開始時間(最終要得到整個執行過程總共花費多少時間)
 
     try:
         regions_path = "./json/map_regions.json"
@@ -363,24 +373,28 @@ if __name__ == '__main__':
         chromedriver_path = './chromedriver.exe'  # chromedriver
         count = 1
         
+
+        
         # 【單一縣市測試】
-        # city = '基隆市'
-        # regions = map_regions[city]
-        # url = f'https://www.cwb.gov.tw/V8/C/W/Town/Town.html?TID={regions[0]["ID"]}' # 從第一筆開始抓
-        # Crawler(url, regions)
+        city = '基隆市'
+        regions = map_regions[city]
+        url = f'https://www.cwb.gov.tw/V8/C/W/Town/Town.html?TID={regions[0]["ID"]}' # 從第一筆開始抓
+        Crawler(url, regions)
+        # print(f"【爬蟲】總花費時間: {format( time.time() - start)}秒")
 
-
-        for city, regions in map_regions.items():
-            url = f'https://www.cwb.gov.tw/V8/C/W/Town/Town.html?TID={regions[0]["ID"]}' # 從第一筆開始抓
-            Crawler(url, regions)
-            count +=1
+        ## 【全縣市測試】
+        # for city, regions in map_regions.items():
+        #     url = f'https://www.cwb.gov.tw/V8/C/W/Town/Town.html?TID={regions[0]["ID"]}' # 從第一筆開始抓
+        #     Crawler(url, regions)
+        #     count +=1
     
     except Exception as e:
         pass
     
     finally:
         
-        print(f"程式已經執行完畢，總花費時間: {format( time.time() - start)}秒")
+        
+        print(f"程式已經執行完畢，總花費時間: {format( time.time() - final_start)}秒")
         print("視窗將在兩秒後將關閉...")
         time.sleep(2)
     
