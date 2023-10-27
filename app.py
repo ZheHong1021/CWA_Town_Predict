@@ -132,7 +132,6 @@ def getSevenDays(soup):
         date = datetime.datetime.strptime( f"{ datetime.date.today().year }/{date}", "%Y/%m/%d")
         date = datetime.datetime.strftime( date, "%Y-%m-%d" )
         total[header_name].extend( [ date for i in range(0, int(colspan)) ] ) # 依照跨足時間區間的數量透過一行迴圈來push到陣列中
-
     #endregion
 
     #region (處理表格內容)
@@ -167,7 +166,6 @@ def getSevenDays(soup):
                 continue
 
             total[header_name].append(td.getText())
-    
     #endregion
 
 
@@ -248,10 +246,12 @@ def Crawler(url, regions):
         three_hours_aTag = driver.find_element(By.XPATH, '//*[@id="Tab_3hrTable"]')
         one_week_aTag = driver.find_element(By.XPATH, '//*[@id="Tab_weeksTable"]')
 
+        one_week_aTag.click() # 切換到一周
     #endregion
 
         # 開始切換鄉鎮區
         for i, region in enumerate(regions):
+        # for i, region in enumerate(regions[0:1]):
             print("-----")
             print(f"目前進度: {region['city'] + region['district']}({i+1}/{len(regions)})")
             # 得到當前區域天氣
@@ -276,38 +276,37 @@ def Crawler(url, regions):
                 continue
             #endregion
 
+            
+
             #region (逐三小時預報)
             try:
-                start = time.time()
-
                 # 確定有這個資料再開始抓
-                PC3_D = WebDriverWait(driver, 10, 1).until(
+                TableId3hr = WebDriverWait(driver, 10, 1).until(
                     EC.presence_of_element_located(
-                        (By.ID, 'PC3_D')
+                        (By.ID, 'TableId3hr')
                     )
                 )
                 three_hours = getThreeHours(soup) 
                 three_hours = json.dumps(three_hours, indent = 4)
-                # print(three_hours)
             except Exception as e:
                 print(f"{region['city']}{region['district']}抓取逐三小時預報時發生問題 : {e}")
                 continue
             finally:
                 one_week_aTag.click() # 切換到一周
-                
             #endregion
+
+            
 
             #region (一週預報)
             try:
                 # 確定有這個資料再開始抓
-                PC7_D = WebDriverWait(driver, 10, 1).until(
+                TableIdweeks = WebDriverWait(driver, 10, 1).until(
                     EC.presence_of_element_located(
-                        (By.ID, 'PC7_D')
+                        (By.ID, 'TableIdweeks')
                     )
                 )
                 seven_days = getSevenDays(soup) 
                 seven_days = json.dumps(seven_days, indent = 4)
-                # print(seven_days)
             except Exception as e:
                 print(f"{region['city']}{region['district']}抓取一週預報時發生問題 : {e}")
                 continue
@@ -376,17 +375,17 @@ if __name__ == '__main__':
 
         
         # 【單一縣市測試】
-        city = '基隆市'
-        regions = map_regions[city]
-        url = f'https://www.cwb.gov.tw/V8/C/W/Town/Town.html?TID={regions[0]["ID"]}' # 從第一筆開始抓
-        Crawler(url, regions)
+        # city = '基隆市'
+        # regions = map_regions[city]
+        # url = f'https://www.cwb.gov.tw/V8/C/W/Town/Town.html?TID={regions[0]["ID"]}' # 從第一筆開始抓
+        # Crawler(url, regions)
         # print(f"【爬蟲】總花費時間: {format( time.time() - start)}秒")
 
-        ## 【全縣市測試】
-        # for city, regions in map_regions.items():
-        #     url = f'https://www.cwb.gov.tw/V8/C/W/Town/Town.html?TID={regions[0]["ID"]}' # 從第一筆開始抓
-        #     Crawler(url, regions)
-        #     count +=1
+        # 【全縣市測試】
+        for city, regions in map_regions.items():
+            url = f'https://www.cwb.gov.tw/V8/C/W/Town/Town.html?TID={regions[0]["ID"]}' # 從第一筆開始抓
+            Crawler(url, regions)
+            count +=1
     
     except Exception as e:
         pass
