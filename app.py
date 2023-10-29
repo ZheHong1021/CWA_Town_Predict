@@ -31,7 +31,8 @@ def write_Map_JSON():
 
 
 """立即資訊"""
-def getNow(soup):
+def getNow(driver):
+    soup = BeautifulSoup(driver.page_source, "lxml") # 透過 soup解析 XML
     C_weather_table = soup.find("table", {"class": "cubeV9-table"})
     tbody = C_weather_table.find("tbody")
     tds = tbody.find_all("td")
@@ -49,7 +50,8 @@ def getNow(soup):
     return C_Weather
 
 """逐三小時預報"""
-def getThreeHours(soup):
+def getThreeHours(driver):
+    soup = BeautifulSoup(driver.page_source, "lxml") # 透過 soup解析 XML
     three_hours_weather_table = soup.find("table", {"id": "TableId3hr"})
     total = dict()
 
@@ -115,7 +117,8 @@ def getThreeHours(soup):
     return result
 
 """一週預報(寫法跟逐三小時預報差不多)"""
-def getSevenDays(soup):
+def getSevenDays(driver):
+    soup = BeautifulSoup(driver.page_source, "lxml") # 透過 soup解析 XML
     table = soup.find("table", {"id": "TableIdweeks"})
     total = dict()
 
@@ -242,11 +245,11 @@ def Crawler(url, regions):
         select_TID = Select( select_TID )
 
 
-        # 【切換 近三小時預測 / 一周預測】
+       
         three_hours_aTag = driver.find_element(By.XPATH, '//*[@id="Tab_3hrTable"]')
         one_week_aTag = driver.find_element(By.XPATH, '//*[@id="Tab_weeksTable"]')
 
-        one_week_aTag.click() # 切換到一周
+        
     #endregion
 
         # 開始切換鄉鎮區
@@ -257,18 +260,15 @@ def Crawler(url, regions):
             # 得到當前區域天氣
             select_TID.select_by_value(region["ID"])
 
-            # 透過 soup解析 XML
-            soup = BeautifulSoup(driver.page_source, "lxml")
-
             #region (即時資訊)
             try:
                 # 確定有這個資料再開始抓
-                GT_Time = WebDriverWait(driver, 10, 1).until(
+                GT_Time = WebDriverWait(driver, 10).until(
                     EC.presence_of_element_located(
                         (By.CLASS_NAME, 'GT_Time')
                     )
                 )
-                now_info = getNow(soup) 
+                now_info = getNow(driver) 
                 # print(f"溫度: {now_info['GT_T']} ； 濕度: {now_info['GT_RH']}")
                 now_info = json.dumps(now_info, indent = 4)
             except Exception as e:
@@ -276,36 +276,37 @@ def Crawler(url, regions):
                 continue
             #endregion
 
+            # locator = (By.CSS_SELECTOR , 'table[class="d-none"][id="TableId3hr"]')
+            # WebDriverWait(driver, 10).until_not(EC.visibility_of_element_located(locator))
             
-
             #region (逐三小時預報)
             try:
                 # 確定有這個資料再開始抓
-                TableId3hr = WebDriverWait(driver, 10, 1).until(
+                TableId3hr = WebDriverWait(driver, 10).until(
                     EC.presence_of_element_located(
                         (By.ID, 'TableId3hr')
                     )
                 )
-                three_hours = getThreeHours(soup) 
+                three_hours = getThreeHours(driver) 
                 three_hours = json.dumps(three_hours, indent = 4)
             except Exception as e:
                 print(f"{region['city']}{region['district']}抓取逐三小時預報時發生問題 : {e}")
                 continue
             finally:
                 one_week_aTag.click() # 切換到一周
+                
             #endregion
-
-            
 
             #region (一週預報)
             try:
                 # 確定有這個資料再開始抓
-                TableIdweeks = WebDriverWait(driver, 10, 1).until(
+                TableIdweeks = WebDriverWait(driver, 10).until(
                     EC.presence_of_element_located(
                         (By.ID, 'TableIdweeks')
                     )
                 )
-                seven_days = getSevenDays(soup) 
+                
+                seven_days = getSevenDays(driver) 
                 seven_days = json.dumps(seven_days, indent = 4)
             except Exception as e:
                 print(f"{region['city']}{region['district']}抓取一週預報時發生問題 : {e}")
@@ -341,8 +342,6 @@ def Crawler(url, regions):
         driver.quit()
 
 
-
-
 if __name__ == '__main__':
     final_start = time.time()
 
@@ -356,7 +355,6 @@ if __name__ == '__main__':
 
     if( not db ):
         print("資料庫連線發生問題")
-    
 
     #region (!製作 hash map)
     # json_object = write_Map_JSON()
@@ -372,14 +370,11 @@ if __name__ == '__main__':
         chromedriver_path = './chromedriver.exe'  # chromedriver
         count = 1
         
-
-        
         # 【單一縣市測試】
-        # city = '基隆市'
-        # regions = map_regions[city]
-        # url = f'https://www.cwb.gov.tw/V8/C/W/Town/Town.html?TID={regions[0]["ID"]}' # 從第一筆開始抓
-        # Crawler(url, regions)
-        # print(f"【爬蟲】總花費時間: {format( time.time() - start)}秒")
+        city = '新北市'
+        regions = map_regions[city]
+        url = f'https://www.cwb.gov.tw/V8/C/W/Town/Town.html?TID={regions[0]["ID"]}' # 從第一筆開始抓
+        Crawler(url, regions)
 
         # 【全縣市測試】
         for city, regions in map_regions.items():
