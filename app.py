@@ -212,7 +212,7 @@ def Crawler(url, regions):
         option.add_argument('--disable-dev-shm-usage') # 使用共享內存RAM
         option.add_argument('--disable-gpu') # 規避部分chrome gpu bug
 
-        driver = webdriver.Chrome(chromedriver_path, chrome_options=option) #啟動模擬瀏覽器
+        driver = webdriver.Chrome(CHROMEDRIVER_PATH, chrome_options=option) #啟動模擬瀏覽器
     #endregion
 
     #region (啟動 chromedriver)
@@ -367,7 +367,7 @@ if __name__ == '__main__':
         with open(regions_path, 'r', encoding="utf8") as json_file: # 讀取 JSON檔案
             map_regions = json.load(json_file) # regions變數為所有要抓取鄉鎮資訊
 
-        chromedriver_path = './chromedriver.exe'  # chromedriver
+        CHROMEDRIVER_PATH = './chromedriver.exe'  # chromedriver
         count = 1
         
         # 【單一縣市測試】
