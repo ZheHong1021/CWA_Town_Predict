@@ -373,7 +373,7 @@ if __name__ == '__main__':
         # 【單一縣市測試】
         city = '新北市'
         regions = map_regions[city]
-        url = f'https://www.cwb.gov.tw/V8/C/W/Town/Town.html?TID={regions[0]["ID"]}' # 從第一筆開始抓
+        url = f'https://www.cwa.gov.tw/V8/C/W/Town/Town.html?TID={regions[0]["ID"]}' # 從第一筆開始抓
         Crawler(url, regions)
 
         # 【全縣市測試】
